@@ -1,7 +1,6 @@
 import datetime
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
-from django.shortcuts import get_object_or_404
 from contaduria.meses import MESES_CUSTOM
 from contaduria.models import *
 from facturas.models import factura
@@ -116,55 +115,3 @@ def proyeccioningresos(request):
         }
     
     return render(request, 'proyeccioningreso.html', context)
-
-
-@login_required(login_url='/facturas/')
-def autorizar_facturas(request):
-    if request.method == 'POST':
-
-        facturas_seleccionadas = request.POST.getlist('facturas[]')
-
-        for factura_id in facturas_seleccionadas:
-            factura_selec = factura.objects.get(pk=factura_id)
-            factura_selec.estado = "Enviado"
-            factura_selec.save()
-
-    return redirect('facturas')
-
-@login_required(login_url='/login/')
-def facturas(request):
-
-    facturas = factura.objects.all()
-    #ahora guarda al primer grupo que encuentra pero despues va a haber que modificar para sea de los grupos de codigoFinanciero
-    grupo = request.user.groups.first()
-
-    if request.method == 'POST':
-        #obtengo el value del que se apreto el boton
-        factura_button_id = request.POST.get('factura_button_id')
-        #cambio el estado
-        if factura_button_id:
-            factura_selec = factura.objects.get(pk=factura_button_id)
-            factura_selec.estado = 'Enviado'
-            factura_selec.save()
-
-
-        #obtengo lista de todos los que se hicieron check
-        facturas_check_id = request.POST.getlist('facturas_check_id')
-        #cambio el estado si se apreto el boton de autorizar
-        if facturas_check_id and 'autorizar_seleccionados' in request.POST:
-            for factura_check_id in facturas_check_id:
-                factura_selec = factura.objects.get(pk=factura_check_id)
-                factura_selec.estado = 'Enviado'
-                factura_selec.save()
-
-        return redirect('facturas')
-
-    facturas = facturas.filter(codigo__CODIGO = grupo, estado = "Pendiente")
-    cantidad_facturas_pendientes = facturas.count()
-
-    context = {
-        'facturas' : facturas,
-        'cantidad_facturas_pendientes' : cantidad_facturas_pendientes,
-    }
-
-    return render(request, 'facturas.html', context)
